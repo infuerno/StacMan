@@ -5,15 +5,17 @@ using Xunit;
 namespace StackExchange.StacMan.Tests
 {
     // these actually talk over the network
-    public class IntegrationTests
+    public class Integration21Tests
     {
+        private const string ApiVersion = "2.1";
+        
         [Fact]
         public void BasicTestNoManager()
         {
-            var client = new StacManClient();
+            var client = new StacManClient(null, ApiVersion);
 
             var sites = client.Sites.GetAll(pagesize: 50).Result;
-            Assert.Equal("http://api.stackexchange.com/2.0/sites?pagesize=50", sites.ApiUrl);
+            Assert.Equal($"http://api.stackexchange.com/{ApiVersion}/sites?pagesize=50", sites.ApiUrl);
             Assert.Equal(50, sites.Data.Items.Count());
             Assert.True(sites.Data.HasMore);
         }
@@ -21,7 +23,7 @@ namespace StackExchange.StacMan.Tests
         [Fact]
         public void BasicTestWithManager()
         {
-            var client = new StacManClient();
+            var client = new StacManClient(null, ApiVersion);
             client.UserAgent = GetType().Name;
             List<string> urls = new List<string>();
             client.SetUrlManager(x =>
@@ -32,14 +34,14 @@ namespace StackExchange.StacMan.Tests
             });
 
             var sites = client.Sites.GetAll(pagesize: 50).Result;
-            Assert.Equal("http://api.stackexchange.com/2.0/sites?pagesize=50", sites.ApiUrl);
+            Assert.Equal($"http://api.stackexchange.com/{ApiVersion}/sites?pagesize=50", sites.ApiUrl);
             Assert.Equal(50, sites.Data.Items.Count());
             Assert.True(sites.Data.HasMore);
 
             lock (urls)
             {
                 Assert.Single(urls);
-                Assert.Equal("http://api.stackexchange.com/2.0/sites?pagesize=50", urls[0]);
+                Assert.Equal($"http://api.stackexchange.com/{ApiVersion}/sites?pagesize=50", urls[0]);
             }
         }
 

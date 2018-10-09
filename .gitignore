@@ -8,3 +8,5 @@ _ReSharper.*
 *.sln.ide
 NuGet.CommandLine.*
 .vs/
+.idea/
+.DS_Store

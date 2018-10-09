@@ -8,7 +8,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace StackExchange.StacMan
 {
     /// <summary>
@@ -37,6 +36,7 @@ namespace StackExchange.StacMan
         {
             this.urlManager = urlManager;
         }
+
         private Func<string, string> urlManager;
 
         private readonly string Key;
@@ -182,7 +182,6 @@ namespace StackExchange.StacMan
                     callback(response);
                 };
 
-
             var urlManager = this.urlManager; // snapshot
             if (httpMethod == HttpMethod.POST)
             {
@@ -214,7 +213,7 @@ namespace StackExchange.StacMan
         /// <summary>
         /// this is "internal protected virtual" so it can be mocked in unit tests
         /// </summary>
-        internal protected virtual void FetchApiResponseWithGET(string url, Action<string> success, Action<Exception> error)
+        protected internal virtual void FetchApiResponseWithGET(string url, Action<string> success, Action<Exception> error)
         {
             var request = (HttpWebRequest)WebRequest.Create(url);
             request.Timeout = ApiTimeoutMs;
@@ -263,7 +262,7 @@ namespace StackExchange.StacMan
         /// <summary>
         /// this is "internal protected virtual" so it can be mocked in unit tests
         /// </summary>
-        internal protected virtual void FetchApiResponseWithPOST(string url, string data, Action<string> success, Action<Exception> error)
+        protected internal virtual void FetchApiResponseWithPOST(string url, string data, Action<string> success, Action<Exception> error)
         {
             var postData = System.Text.Encoding.UTF8.GetBytes(data);
 
@@ -274,7 +273,7 @@ namespace StackExchange.StacMan
             request.ContentLength = postData.Length;
             request.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip;
             request.UserAgent = GetUserAgent();
-            
+
             request.BeginGetRequestStream(
                 asyncResult =>
                 {
@@ -363,7 +362,7 @@ namespace StackExchange.StacMan
                 {
                     value = ReflectionCache.StacManClientParseApiResponse
                         .MakeGenericMethod(property.PropertyType)
-                        .Invoke(this, new object[] { (Dictionary<string, object>)jsonObject[fieldName], backoffKey });
+                        .Invoke(this, new object[] { JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonObject[fieldName].ToString()), backoffKey });
                 }
                 else if (property.PropertyType.IsArray)
                 {
@@ -371,11 +370,12 @@ namespace StackExchange.StacMan
 
                     Func<object, object> selector;
                     if (elementType.BaseType == typeof(StacManType))
-                        selector = o => ReflectionCache.StacManClientParseApiResponse.MakeGenericMethod(elementType).Invoke(this, new object[] { o, backoffKey });
+                        selector = o => ReflectionCache.StacManClientParseApiResponse.MakeGenericMethod(elementType)
+                            .Invoke(this, new object[] { JsonConvert.DeserializeObject<Dictionary<string, object>>(o.ToString()), backoffKey });
                     else
                         selector = o => Convert.ChangeType(o, elementType.BaseType);
 
-                    var objArr = ((ArrayList)jsonObject[fieldName]).Cast<object>().Select(selector).ToArray();
+                    var objArr = JsonConvert.DeserializeObject<ArrayList>(jsonObject[fieldName].ToString()).Cast<object>().Select(selector).ToArray();
 
                     value = Array.CreateInstance(elementType, objArr.Length);
                     Array.Copy(objArr, (Array)value, objArr.Length);
